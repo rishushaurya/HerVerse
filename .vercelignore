@@ -1,0 +1,8 @@
+# Ensure these are NOT ignored
+!api
+!api/**
+
+# Standard ignores
+node_modules
+.env.local
+.env.*.local

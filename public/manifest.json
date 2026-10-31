@@ -1,0 +1,16 @@
+{
+    "name": "Herverse",
+    "short_name": "Herverse",
+    "description": "every women every phase - Your intelligent companion for health, wellness, and daily life",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#f43f5e",
+    "icons": [
+        {
+            "src": "/logo.jpeg",
+            "sizes": "512x512",
+            "type": "image/jpeg"
+        }
+    ]
+}

@@ -1,0 +1,397 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* ============================================
+     HERVERSE CUSTOM THEME SYSTEM
+     Each theme defines ALL visual properties
+     ============================================ */
+
+  /* 🌸 Light Theme — Rose Petal (Default) */
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 346 87% 65%;
+    --primary-foreground: 355 100% 97%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 346 87% 65%;
+
+    /* App-wide tokens */
+    --app-bg-gradient: linear-gradient(180deg, #FFF0F5 0%, #FDF2F8 50%, #FFFFFF 100%);
+    --app-text-primary: #1F2937;
+    --app-text-secondary: #6B7280;
+    --app-text-muted: #9CA3AF;
+    --app-card-bg: #FFFFFF;
+    --app-card-border: #F3F4F6;
+    --app-card-hover: #FFF1F2;
+    --app-nav-bg: rgba(255, 255, 255, 0.92);
+    --app-nav-border: #F3F4F6;
+    --app-nav-active: #F43F5E;
+    --app-nav-active-bg: #FFF1F2;
+    --app-nav-inactive: #9CA3AF;
+    --app-input-bg: #FFFFFF;
+    --app-input-border: #E5E7EB;
+    --app-modal-bg: #FFFFFF;
+    --app-accent: #F43F5E;
+    --app-accent-secondary: #A855F7;
+    --app-accent-light: #FFF1F2;
+    --app-accent-gradient: linear-gradient(135deg, #F43F5E, #A855F7);
+    --app-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --app-badge-bg: #FFF1F2;
+    --app-badge-text: #E11D48;
+    --app-tab-bg: #FFFFFF;
+    --app-tab-active-bg: #FFF1F2;
+    --app-tab-active-text: #E11D48;
+  }
+
+  /* 🌙 Soft Dark Theme — Midnight Bloom */
+  .soft_dark {
+    --background: 240 15% 8%;
+    --foreground: 0 0% 95%;
+    --card: 240 12% 14%;
+    --card-foreground: 0 0% 95%;
+    --popover: 240 12% 14%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 346 80% 65%;
+    --primary-foreground: 355 100% 97%;
+    --secondary: 240 10% 20%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 240 10% 20%;
+    --muted-foreground: 240 5% 60%;
+    --accent: 240 10% 20%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 10% 20%;
+    --input: 240 10% 18%;
+    --ring: 346 80% 65%;
+
+    --app-bg-gradient: linear-gradient(180deg, #0F172A 0%, #1E1B4B 50%, #1E293B 100%);
+    --app-text-primary: #F1F5F9;
+    --app-text-secondary: #94A3B8;
+    --app-text-muted: #64748B;
+    --app-card-bg: rgba(30, 41, 59, 0.8);
+    --app-card-border: rgba(100, 116, 139, 0.2);
+    --app-card-hover: rgba(51, 65, 85, 0.6);
+    --app-nav-bg: rgba(15, 23, 42, 0.95);
+    --app-nav-border: rgba(100, 116, 139, 0.15);
+    --app-nav-active: #FB7185;
+    --app-nav-active-bg: rgba(251, 113, 133, 0.15);
+    --app-nav-inactive: #64748B;
+    --app-input-bg: rgba(30, 41, 59, 0.6);
+    --app-input-border: rgba(100, 116, 139, 0.3);
+    --app-modal-bg: #1E293B;
+    --app-accent: #FB7185;
+    --app-accent-secondary: #C084FC;
+    --app-accent-light: rgba(251, 113, 133, 0.15);
+    --app-accent-gradient: linear-gradient(135deg, #FB7185, #C084FC);
+    --app-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    --app-badge-bg: rgba(251, 113, 133, 0.15);
+    --app-badge-text: #FB7185;
+    --app-tab-bg: rgba(30, 41, 59, 0.8);
+    --app-tab-active-bg: rgba(251, 113, 133, 0.15);
+    --app-tab-active-text: #FB7185;
+  }
+
+  /* 🌿 Emerald Serenity Theme — Forest Calm */
+  .emerald_serenity {
+    --background: 152 40% 96%;
+    --foreground: 160 50% 12%;
+    --card: 150 30% 98%;
+    --card-foreground: 160 50% 12%;
+    --popover: 150 30% 98%;
+    --popover-foreground: 160 50% 12%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 152 30% 92%;
+    --secondary-foreground: 160 50% 12%;
+    --muted: 152 30% 92%;
+    --muted-foreground: 160 25% 45%;
+    --accent: 152 30% 92%;
+    --accent-foreground: 160 50% 12%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 152 35% 88%;
+    --input: 152 35% 88%;
+    --ring: 160 84% 39%;
+
+    --app-bg-gradient: linear-gradient(180deg, #ECFDF5 0%, #D1FAE5 50%, #F0FDF4 100%);
+    --app-text-primary: #064E3B;
+    --app-text-secondary: #047857;
+    --app-text-muted: #6EE7B7;
+    --app-card-bg: rgba(255, 255, 255, 0.85);
+    --app-card-border: rgba(16, 185, 129, 0.15);
+    --app-card-hover: #ECFDF5;
+    --app-nav-bg: rgba(236, 253, 245, 0.95);
+    --app-nav-border: rgba(16, 185, 129, 0.15);
+    --app-nav-active: #059669;
+    --app-nav-active-bg: rgba(5, 150, 105, 0.12);
+    --app-nav-inactive: #6EE7B7;
+    --app-input-bg: rgba(255, 255, 255, 0.8);
+    --app-input-border: rgba(16, 185, 129, 0.25);
+    --app-modal-bg: #F0FDF4;
+    --app-accent: #059669;
+    --app-accent-secondary: #14B8A6;
+    --app-accent-light: rgba(5, 150, 105, 0.1);
+    --app-accent-gradient: linear-gradient(135deg, #059669, #14B8A6);
+    --app-shadow: 0 2px 8px rgba(5, 150, 105, 0.08);
+    --app-badge-bg: rgba(5, 150, 105, 0.1);
+    --app-badge-text: #059669;
+    --app-tab-bg: rgba(255, 255, 255, 0.85);
+    --app-tab-active-bg: rgba(5, 150, 105, 0.12);
+    --app-tab-active-text: #059669;
+  }
+
+  /* 👑 Royal Amethyst Theme — Regal Purple */
+  .royal_amethyst {
+    --background: 270 30% 96%;
+    --foreground: 270 45% 15%;
+    --card: 270 20% 98%;
+    --card-foreground: 270 45% 15%;
+    --popover: 270 20% 98%;
+    --popover-foreground: 270 45% 15%;
+    --primary: 270 70% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 25% 92%;
+    --secondary-foreground: 270 45% 15%;
+    --muted: 270 25% 92%;
+    --muted-foreground: 270 20% 50%;
+    --accent: 270 25% 92%;
+    --accent-foreground: 270 45% 15%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 270 30% 88%;
+    --input: 270 30% 88%;
+    --ring: 270 70% 55%;
+
+    --app-bg-gradient: linear-gradient(180deg, #F5F3FF 0%, #EDE9FE 50%, #FAF5FF 100%);
+    --app-text-primary: #3B0764;
+    --app-text-secondary: #7C3AED;
+    --app-text-muted: #C4B5FD;
+    --app-card-bg: rgba(255, 255, 255, 0.85);
+    --app-card-border: rgba(139, 92, 246, 0.12);
+    --app-card-hover: #F5F3FF;
+    --app-nav-bg: rgba(250, 245, 255, 0.95);
+    --app-nav-border: rgba(139, 92, 246, 0.12);
+    --app-nav-active: #7C3AED;
+    --app-nav-active-bg: rgba(124, 58, 237, 0.1);
+    --app-nav-inactive: #C4B5FD;
+    --app-input-bg: rgba(255, 255, 255, 0.8);
+    --app-input-border: rgba(139, 92, 246, 0.2);
+    --app-modal-bg: #FAF5FF;
+    --app-accent: #7C3AED;
+    --app-accent-secondary: #A855F7;
+    --app-accent-light: rgba(124, 58, 237, 0.1);
+    --app-accent-gradient: linear-gradient(135deg, #7C3AED, #A855F7);
+    --app-shadow: 0 2px 8px rgba(124, 58, 237, 0.08);
+    --app-badge-bg: rgba(124, 58, 237, 0.1);
+    --app-badge-text: #7C3AED;
+    --app-tab-bg: rgba(255, 255, 255, 0.85);
+    --app-tab-active-bg: rgba(124, 58, 237, 0.1);
+    --app-tab-active-text: #7C3AED;
+  }
+
+  /* 🌅 Sunset Glow Theme — Warm Golden */
+  .sunset_glow {
+    --background: 30 50% 97%;
+    --foreground: 20 60% 12%;
+    --card: 30 40% 98%;
+    --card-foreground: 20 60% 12%;
+    --popover: 30 40% 98%;
+    --popover-foreground: 20 60% 12%;
+    --primary: 25 95% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 30% 92%;
+    --secondary-foreground: 20 60% 12%;
+    --muted: 30 30% 92%;
+    --muted-foreground: 25 25% 50%;
+    --accent: 30 30% 92%;
+    --accent-foreground: 20 60% 12%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 30 35% 88%;
+    --input: 30 35% 88%;
+    --ring: 25 95% 55%;
+
+    --app-bg-gradient: linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 50%, #FFF7ED 100%);
+    --app-text-primary: #78350F;
+    --app-text-secondary: #B45309;
+    --app-text-muted: #FBBF24;
+    --app-card-bg: rgba(255, 255, 255, 0.88);
+    --app-card-border: rgba(245, 158, 11, 0.15);
+    --app-card-hover: #FFFBEB;
+    --app-nav-bg: rgba(255, 251, 235, 0.95);
+    --app-nav-border: rgba(245, 158, 11, 0.15);
+    --app-nav-active: #D97706;
+    --app-nav-active-bg: rgba(217, 119, 6, 0.1);
+    --app-nav-inactive: #FBBF24;
+    --app-input-bg: rgba(255, 255, 255, 0.8);
+    --app-input-border: rgba(245, 158, 11, 0.25);
+    --app-modal-bg: #FFFBEB;
+    --app-accent: #D97706;
+    --app-accent-secondary: #EA580C;
+    --app-accent-light: rgba(217, 119, 6, 0.1);
+    --app-accent-gradient: linear-gradient(135deg, #D97706, #EA580C);
+    --app-shadow: 0 2px 8px rgba(217, 119, 6, 0.08);
+    --app-badge-bg: rgba(217, 119, 6, 0.1);
+    --app-badge-text: #D97706;
+    --app-tab-bg: rgba(255, 255, 255, 0.88);
+    --app-tab-active-bg: rgba(217, 119, 6, 0.1);
+    --app-tab-active-text: #D97706;
+  }
+}
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ============================
+   GLOBAL THEME UTILITY CLASSES
+   ============================ */
+
+/* Premium scrollbar */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar for all browsers */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prevent pull-to-refresh */
+body {
+  overscroll-behavior-y: contain;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Theme-aware utility classes for components that can't easily use inline styles */
+.theme-card {
+  background: var(--app-card-bg);
+  border-color: var(--app-card-border);
+  box-shadow: var(--app-shadow);
+}
+
+.theme-text-primary {
+  color: var(--app-text-primary);
+}
+
+.theme-text-secondary {
+  color: var(--app-text-secondary);
+}
+
+.theme-text-muted {
+  color: var(--app-text-muted);
+}
