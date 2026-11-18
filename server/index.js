@@ -410,8 +410,8 @@ router.post('/entities/:entity', authenticateToken, async (req, res) => {
     created_at: new Date().toISOString()
   };
 
-  await db.createEntity(collectionName, newItem);
-  res.json(newItem);
+  // One check-in per day: a second create for the same date (double tap, Home and Health) updates the first.
+  res.json(await db.createEntity(collectionName, newItem, collectionName === 'daily_checkins' ? ['date'] : []));
 });
 
 router.patch('/entities/:entity/:id', authenticateToken, async (req, res) => {

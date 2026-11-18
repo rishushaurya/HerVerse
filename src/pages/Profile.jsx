@@ -44,7 +44,8 @@ export default function Profile() {
   const { data: contacts = [] } = useQuery({ queryKey: ['emergencyContacts'], queryFn: () => base44.entities.EmergencyContact.list() });
 
   const updatePrefsMutation = useMutation({
-    mutationFn: (data) => base44.entities.UserPreferences.update(preferences.id, data),
+    // Users who skipped onboarding have no preferences record yet: create it on first change.
+    mutationFn: (data) => preferences ? base44.entities.UserPreferences.update(preferences.id, data) : base44.entities.UserPreferences.create(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['preferences'] })
   });
 

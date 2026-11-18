@@ -85,6 +85,15 @@ assert.equal(history.find(h => h.role === 'assistant').content, 'Hi Asha! 🌸')
 await call('DELETE', '/ai/history', null, A);
 assert.equal((await call('GET', '/entities/ChatHistory', null, A)).json.length, 0);
 
+// One check-in per day, even when two saves for the same date arrive together (double tap)
+await Promise.all([
+  call('POST', '/entities/DailyCheckIn', { date: '2026-01-02', mood: 3 }, A),
+  call('POST', '/entities/DailyCheckIn', { date: '2026-01-02', energy: 4 }, A),
+]);
+const day = (await call('GET', '/entities/DailyCheckIn', null, A)).json.filter(c => c.date === '2026-01-02');
+assert.equal(day.length, 1, 'no duplicate check-in');
+assert.deepEqual([day[0].mood, day[0].energy], [3, 4], 'both saves kept');
+
 // Health report says what is configured, without secrets
 const health = (await call('GET', '/health')).json;
 assert.deepEqual(

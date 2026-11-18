@@ -262,12 +262,20 @@ export class DBAdapter {
         return results;
     }
 
-    async createEntity(collectionName, item) {
+    // uniqueBy: fields that identify one record per user (e.g. ['date'] for check-ins); a match is updated instead.
+    async createEntity(collectionName, item, uniqueBy = []) {
         const data = await this._read();
         if (!data[collectionName]) data[collectionName] = [];
-        data[collectionName].push(item);
+        const existing = uniqueBy.length > 0 && data[collectionName].find(x =>
+            x.user_id === item.user_id && uniqueBy.every(k => item[k] != null && x[k] === item[k]));
+        if (existing) {
+            const { id, created_at, ...updates } = item;
+            Object.assign(existing, updates);
+        } else {
+            data[collectionName].push(item);
+        }
         await this._write(data);
-        return item;
+        return existing || item;
     }
 
     async updateEntity(collectionName, id, userId, updates) {
