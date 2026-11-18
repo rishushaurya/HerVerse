@@ -92,16 +92,14 @@ class UpstashRedisDB {
 }
 
 // 3. Vercel Blob (production when Redis isn't connected). The whole DB is one private JSON blob.
-// Reads bypass the CDN cache (useCache: false) and writes use the ETag from that read (ifMatch),
-// so a write based on stale data fails instead of silently overwriting someone else's save.
-const isBlobNotFound = (e) => e?.constructor?.name === 'BlobNotFoundError' || /requested blob does not exist/i.test(e?.message);
-
+// Reads bypass the CDN cache (useCache: false). Writes overwrite; DBAdapter runs them one at a time.
+// (Conditional writes are not used: the live store rejects every ifMatch ETag, even from head().)
 export class BlobDB {
     constructor({ token, client }) {
         this.token = token;
-        this.client = client; // { get, head, put } from @vercel/blob (injectable for the self-check)
+        this.client = client; // { get, put } from @vercel/blob (injectable for the self-check)
         this.pathname = 'herverse/db.json';
-        this.reads = new WeakMap(); // data object -> { existed, etag } from the read it came from
+        this.existed = new WeakMap(); // data object -> whether the blob existed when it was read
     }
 
     async connect() {
@@ -109,16 +107,10 @@ export class BlobDB {
         await this.getData(); // fail fast if the token or store is wrong (e.g. a public store)
     }
 
-    async getData(forWrite = false) {
-        // A private-store GET carries no ETag header (the SDK then reports etag ''), so a read that leads to a
-        // write takes the ETag from head() FIRST: if a save lands in between, our ETag is the older one and the
-        // write is rejected and retried, never silently overwritten. Plain reads skip it (one Blob call, not two).
-        const headEtag = forWrite
-            ? await this.client.head(this.pathname, { token: this.token }).then(b => b.etag || null, e => { if (isBlobNotFound(e)) return null; throw e; })
-            : null;
+    async getData() {
         const result = await this.client.get(this.pathname, { access: 'private', useCache: false, token: this.token });
         const data = result ? JSON.parse(await new Response(result.stream).text()) : JSON.parse(JSON.stringify(DEFAULT_DATA));
-        this.reads.set(data, { existed: !!result, etag: result?.blob.etag || headEtag });
+        this.existed.set(data, !!result);
         return data;
     }
 
@@ -130,9 +122,7 @@ export class BlobDB {
     }
 
     async writeData(data) {
-        const { existed, etag } = this.reads.get(data) ?? { existed: true, etag: null };
-        // Blob appeared between head() and get(), so there is no ETag to guard the overwrite: re-read instead.
-        if (existed && !etag) throw Object.assign(new Error('Blob changed during read'), { name: 'BlobPreconditionFailedError' });
+        const existed = this.existed.get(data) ?? true;
         try {
             await this.client.put(this.pathname, JSON.stringify(data), {
                 access: 'private',
@@ -140,8 +130,8 @@ export class BlobDB {
                 contentType: 'application/json',
                 addRandomSuffix: false,
                 cacheControlMaxAge: 60,
-                // First write: create only if still absent. Later writes: only if unchanged since our read.
-                ...(existed ? { allowOverwrite: true, ifMatch: etag } : { allowOverwrite: false }),
+                // First write: create only if still absent (two first-time saves can't wipe each other). Later: overwrite.
+                allowOverwrite: existed,
             });
         } catch (e) {
             if (!existed && /already exists/i.test(e.message)) throw Object.assign(e, { name: 'BlobPreconditionFailedError' });
@@ -155,14 +145,16 @@ const MUTATIONS = ['createUser', 'deleteUser', 'updateUser', 'createEntity', 'up
 const isConflict = (e) => e?.name === 'BlobPreconditionFailedError' || e?.constructor?.name === 'BlobPreconditionFailedError';
 
 // Unified Adapter using the strategy pattern for data access
-// seniordev: whole DB is one document (one Redis key), read-modify-write on every change; two writes at the
-// same instant can lose one, and Upstash caps request size. Move to per-user keys (or Postgres) as users grow.
+// seniordev: whole DB is one document, read-modify-write on every change. Mutations are queued so saves in the
+// same server instance never overwrite each other; two instances saving at the same instant can still lose one.
+// Move to per-user keys (or Postgres) as users grow.
 export class DBAdapter {
     constructor(strategy) {
         this.strategy = strategy;
+        this.queue = Promise.resolve();
         for (const name of MUTATIONS) {
             const run = this[name].bind(this);
-            this[name] = async (...args) => {
+            const withRetry = async (...args) => {
                 for (let attempt = 1; ; attempt++) {
                     try {
                         return await run(...args);
@@ -171,11 +163,16 @@ export class DBAdapter {
                     }
                 }
             };
+            this[name] = (...args) => {
+                const result = this.queue.then(() => withRetry(...args));
+                this.queue = result.catch(() => {}); // one failed save must not block the next
+                return result;
+            };
         }
     }
 
-    async _read(forWrite = false) {
-        return await this.strategy.getData(forWrite);
+    async _read() {
+        return await this.strategy.getData();
     }
 
     async _write(data) {
@@ -202,14 +199,14 @@ export class DBAdapter {
     }
 
     async createUser(user) {
-        const data = await this._read(true);
+        const data = await this._read();
         data.users.push(user);
         await this._write(data);
         return user;
     }
 
     async deleteUser(userId) {
-        const data = await this._read(true);
+        const data = await this._read();
         const userIndex = data.users.findIndex(u => u.id === userId);
         if (userIndex !== -1) {
             data.users.splice(userIndex, 1);
@@ -227,7 +224,7 @@ export class DBAdapter {
     }
 
     async updateUser(userId, updates) {
-        const data = await this._read(true);
+        const data = await this._read();
         const index = data.users.findIndex(u => u.id === userId);
         if (index === -1) return null;
         // Don't allow updating password or id through this method
@@ -266,7 +263,7 @@ export class DBAdapter {
     }
 
     async createEntity(collectionName, item) {
-        const data = await this._read(true);
+        const data = await this._read();
         if (!data[collectionName]) data[collectionName] = [];
         data[collectionName].push(item);
         await this._write(data);
@@ -274,7 +271,7 @@ export class DBAdapter {
     }
 
     async updateEntity(collectionName, id, userId, updates) {
-        const data = await this._read(true);
+        const data = await this._read();
         const collection = data[collectionName] || [];
         const index = collection.findIndex(item => item.id === id && item.user_id === userId);
 
@@ -288,7 +285,7 @@ export class DBAdapter {
 
     // Appends chat turns and keeps only the newest `keep` messages for this user (keep = 0 clears).
     async appendChat(userId, items, keep) {
-        const data = await this._read(true);
+        const data = await this._read();
         const mine = [...(data.chat_history || []).filter(m => m.user_id === userId), ...items]
             .sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)))
             .slice(-keep || Infinity);
@@ -297,7 +294,7 @@ export class DBAdapter {
     }
 
     async deleteEntity(collectionName, id, userId) {
-        const data = await this._read(true);
+        const data = await this._read();
         const collection = data[collectionName] || [];
         const index = collection.findIndex(item => item.id === id && item.user_id === userId);
 
