@@ -94,12 +94,14 @@ class UpstashRedisDB {
 // 3. Vercel Blob (production when Redis isn't connected). The whole DB is one private JSON blob.
 // Reads bypass the CDN cache (useCache: false) and writes use the ETag from that read (ifMatch),
 // so a write based on stale data fails instead of silently overwriting someone else's save.
+const isBlobNotFound = (e) => e?.constructor?.name === 'BlobNotFoundError' || /requested blob does not exist/i.test(e?.message);
+
 export class BlobDB {
     constructor({ token, client }) {
         this.token = token;
-        this.client = client; // { get, put } from @vercel/blob (injectable for the self-check)
+        this.client = client; // { get, head, put } from @vercel/blob (injectable for the self-check)
         this.pathname = 'herverse/db.json';
-        this.etags = new WeakMap(); // data object -> ETag it was read with
+        this.reads = new WeakMap(); // data object -> { existed, etag } from the read it came from
     }
 
     async connect() {
@@ -107,10 +109,16 @@ export class BlobDB {
         await this.getData(); // fail fast if the token or store is wrong (e.g. a public store)
     }
 
-    async getData() {
+    async getData(forWrite = false) {
+        // A private-store GET carries no ETag header (the SDK then reports etag ''), so a read that leads to a
+        // write takes the ETag from head() FIRST: if a save lands in between, our ETag is the older one and the
+        // write is rejected and retried, never silently overwritten. Plain reads skip it (one Blob call, not two).
+        const headEtag = forWrite
+            ? await this.client.head(this.pathname, { token: this.token }).then(b => b.etag || null, e => { if (isBlobNotFound(e)) return null; throw e; })
+            : null;
         const result = await this.client.get(this.pathname, { access: 'private', useCache: false, token: this.token });
         const data = result ? JSON.parse(await new Response(result.stream).text()) : JSON.parse(JSON.stringify(DEFAULT_DATA));
-        this.etags.set(data, result?.blob.etag ?? null);
+        this.reads.set(data, { existed: !!result, etag: result?.blob.etag || headEtag });
         return data;
     }
 
@@ -122,7 +130,9 @@ export class BlobDB {
     }
 
     async writeData(data) {
-        const ifMatch = this.etags.get(data);
+        const { existed, etag } = this.reads.get(data) ?? { existed: true, etag: null };
+        // Blob appeared between head() and get(), so there is no ETag to guard the overwrite: re-read instead.
+        if (existed && !etag) throw Object.assign(new Error('Blob changed during read'), { name: 'BlobPreconditionFailedError' });
         try {
             await this.client.put(this.pathname, JSON.stringify(data), {
                 access: 'private',
@@ -131,10 +141,10 @@ export class BlobDB {
                 addRandomSuffix: false,
                 cacheControlMaxAge: 60,
                 // First write: create only if still absent. Later writes: only if unchanged since our read.
-                ...(ifMatch ? { allowOverwrite: true, ifMatch } : { allowOverwrite: false }),
+                ...(existed ? { allowOverwrite: true, ifMatch: etag } : { allowOverwrite: false }),
             });
         } catch (e) {
-            if (!ifMatch && /already exists/i.test(e.message)) throw Object.assign(e, { name: 'BlobPreconditionFailedError' });
+            if (!existed && /already exists/i.test(e.message)) throw Object.assign(e, { name: 'BlobPreconditionFailedError' });
             throw e;
         }
     }
@@ -164,8 +174,8 @@ export class DBAdapter {
         }
     }
 
-    async _read() {
-        return await this.strategy.getData();
+    async _read(forWrite = false) {
+        return await this.strategy.getData(forWrite);
     }
 
     async _write(data) {
@@ -192,14 +202,14 @@ export class DBAdapter {
     }
 
     async createUser(user) {
-        const data = await this._read();
+        const data = await this._read(true);
         data.users.push(user);
         await this._write(data);
         return user;
     }
 
     async deleteUser(userId) {
-        const data = await this._read();
+        const data = await this._read(true);
         const userIndex = data.users.findIndex(u => u.id === userId);
         if (userIndex !== -1) {
             data.users.splice(userIndex, 1);
@@ -217,7 +227,7 @@ export class DBAdapter {
     }
 
     async updateUser(userId, updates) {
-        const data = await this._read();
+        const data = await this._read(true);
         const index = data.users.findIndex(u => u.id === userId);
         if (index === -1) return null;
         // Don't allow updating password or id through this method
@@ -256,7 +266,7 @@ export class DBAdapter {
     }
 
     async createEntity(collectionName, item) {
-        const data = await this._read();
+        const data = await this._read(true);
         if (!data[collectionName]) data[collectionName] = [];
         data[collectionName].push(item);
         await this._write(data);
@@ -264,7 +274,7 @@ export class DBAdapter {
     }
 
     async updateEntity(collectionName, id, userId, updates) {
-        const data = await this._read();
+        const data = await this._read(true);
         const collection = data[collectionName] || [];
         const index = collection.findIndex(item => item.id === id && item.user_id === userId);
 
@@ -278,7 +288,7 @@ export class DBAdapter {
 
     // Appends chat turns and keeps only the newest `keep` messages for this user (keep = 0 clears).
     async appendChat(userId, items, keep) {
-        const data = await this._read();
+        const data = await this._read(true);
         const mine = [...(data.chat_history || []).filter(m => m.user_id === userId), ...items]
             .sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)))
             .slice(-keep || Infinity);
@@ -287,7 +297,7 @@ export class DBAdapter {
     }
 
     async deleteEntity(collectionName, id, userId) {
-        const data = await this._read();
+        const data = await this._read(true);
         const collection = data[collectionName] || [];
         const index = collection.findIndex(item => item.id === id && item.user_id === userId);
 

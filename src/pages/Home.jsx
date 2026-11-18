@@ -246,7 +246,8 @@ export default function Home() {
           queryClient.invalidateQueries({ queryKey: ['emergencyContacts'] });
         }}
         onBulkAddContacts={async (contactsArray) => {
-          await Promise.all(contactsArray.filter(c => !c.isPrefilled).map(contactData => base44.entities.EmergencyContact.create(contactData)));
+          // One at a time: the whole DB is one document, so parallel saves would just race each other for it.
+          for (const contactData of contactsArray.filter(c => !c.isPrefilled)) await base44.entities.EmergencyContact.create(contactData);
           queryClient.invalidateQueries({ queryKey: ['emergencyContacts'] });
         }}
       />

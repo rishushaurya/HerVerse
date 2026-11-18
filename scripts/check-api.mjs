@@ -104,6 +104,7 @@ const { BlobDB, DBAdapter } = await import('../server/db.js?blob');
 let stored = null, version = 0;
 const fakeBlob = {
   async get() { return stored && { stream: new Response(stored).body, blob: { etag: `v${version}` } }; },
+  async head() { if (!stored) throw new Error('Vercel Blob: The requested blob does not exist'); return { etag: `v${version}` }; },
   async put(path, body, opts) {
     assert.equal(opts.access, 'private');
     if (!opts.allowOverwrite && stored) throw new Error('This blob already exists, use allowOverwrite: true');
@@ -121,6 +122,26 @@ await Promise.all([
   blobDb.createEntity('tasks', { id: 'b', user_id: 'u1', title: 'second' }),
 ]);
 assert.deepEqual((await blobDb.findEntities('tasks', { user_id: 'u1' })).map(t => t.id).sort(), ['a', 'b'], 'no save lost');
+
+// Live failure: a private-store GET has no ETag header (SDK reports etag ''), so every save after the first
+// was rejected as "already exists". The ETag now comes from head(); saves in a row and at once must all land.
+let liveStored = null, liveVersion = 0;
+const liveBlob = {
+  async get() { return liveStored && { stream: new Response(liveStored).body, blob: { etag: '' } }; },
+  async head() { if (!liveStored) throw new Error('Vercel Blob: The requested blob does not exist'); return { etag: `"e${liveVersion}"` }; },
+  async put(path, body, opts) {
+    await new Promise(r => setTimeout(r, 5)); // network latency lets concurrent requests interleave; the check+write below is atomic, like Blob's
+    if (!opts.allowOverwrite && liveStored) throw new Error('Vercel Blob: This blob already exists');
+    if (opts.ifMatch !== undefined && opts.ifMatch !== `"e${liveVersion}"`) throw Object.assign(new Error('etag mismatch'), { name: 'BlobPreconditionFailedError' });
+    liveStored = body; liveVersion++;
+  },
+};
+const liveDb = new DBAdapter(new BlobDB({ token: 'vercel_blob_rw_test', client: liveBlob }));
+for (const id of ['x', 'y', 'z']) await liveDb.createEntity('tasks', { id, user_id: 'u2', title: id });
+await liveDb.updateEntity('tasks', 'x', 'u2', { title: 'x2' });
+await Promise.all(['c1', 'c2', 'c3'].map(id => liveDb.createEntity('emergency_contacts', { id, user_id: 'u2' })));
+assert.deepEqual((await liveDb.findEntities('tasks', { user_id: 'u2' })).map(t => t.title).sort(), ['x2', 'y', 'z'], 'saves after the first one work');
+assert.equal((await liveDb.findEntities('emergency_contacts', { user_id: 'u2' })).length, 3, 'contacts saved at the same moment are all kept');
 
 console.log('check-api: all assertions passed');
 process.exit(0);

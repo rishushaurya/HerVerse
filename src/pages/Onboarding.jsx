@@ -188,16 +188,9 @@ export default function Onboarding() {
   const lifeSetupIndex = step - 2;
   if (lifeSetupIndex >= 0 && lifeSetupIndex < lifeSetupSteps.length) {
     const currentQuestion = lifeSetupSteps[lifeSetupIndex];
+    // No "Skip to App" here: it sat on top of the question's own "Skip" link.
     return (
       <div className="relative min-h-screen">
-        <div className="fixed top-4 right-4 z-50">
-          <button
-            onClick={() => navigate(createPageUrl('Home'))}
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 px-3 py-1 rounded-full bg-white/50 backdrop-blur-sm border border-gray-200 shadow-sm"
-          >
-            Skip to App
-          </button>
-        </div>
         <LifeSetupQuestion
           question={currentQuestion.question}
           description={currentQuestion.description}
